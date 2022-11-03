@@ -1,0 +1,51 @@
+// Documentation : http://randochartreuse.free.fr/mobac2.x/documentation/#bsh
+// Version : 30/04/2021
+
+// Nom de la carte affiché dans MOBAC
+	name = "IGN photos PNOA-Z(20)";
+
+// Nom du serveur
+	String MyServer = "www.ign.es"; 
+
+// MyUserAgent correspond à celui créé notamment  avec la clé IGN
+// Par défaut, on trouve souvent MyUserAgent = "Mozilla/5.0 Gecko/20100101 Firefox/49.0";
+	String MyUserAgent = "Mozilla/5.0 Gecko/20100101 Firefox/49.0";
+
+// MyReferer peut être demandé
+	String MyReferer = "";
+
+// MyFolder au format "dossier" ou "dossier1/dossier2/etc"
+	String MyFolder = "wmts/pnoa-ma";
+
+// Paramètres communs
+	String MyService = "WMTS";		// Service : le type de service (ici : “WMTS”)
+	String MyVersion = "1.0.0";		// Version : la version du service WMTS utilisée (1.0.0 actuellement)
+	String MyRequest = "GetTile";	// Request : la requête adressée au serveur (GetCapabilities, GetTile ou GetFeatureInfo)
+
+// Paramètres spécifiques GetTile
+	String MyLayer = "OI.OrthoimageCoverage";								// Layer : la couche demandée (JPG ou PNG)
+	String MyTileMatrixSet = "GoogleMapsCompatible";	// TileMatrixSet : Le nom de la pyramide d’images
+	String MyFormat = "image/jpeg";						// Format : le format de sortie du fichier image (exemple : “image/jpeg” ou “image/png”)
+	String MyStyle = "default";							// Style : le nom d’un style de rendu de la couche à appliquer
+
+tileType = "jpg";	// Type d’image fourni par le serveur (png, jpg or gif)
+tileSize = 256;		// Facultatif : Supprimer la ligne dans le doute
+minZoom = 2;		// Facultatif : Zoom minimal souhaité (et/ou fourni par le serveur)
+maxZoom = 20;		// Facultatif : Zoom maximal souhaité (et/ou fourni par le serveur) -> Maximum 22 pour Mobac
+
+String getTileUrl(int Zoom, int X, int Y) 
+{
+	if (Zoom < 7) {
+		// gestion Zoom < 7, on prend une carte générique Google pour voir le monde entier
+		return "http://mt0.google.com/vt/lyrs=m@176103410&hl=fr&s=Galileo&scale=1&z=" + Zoom + "&x=" + X + "&y=" + Y;
+	}else{
+		// url1_de_test = "http://www.ign.es/wmts/pnoa-ma?Layer=OI.OrthoimageCoverage&Style=default&TileMatrixSet=GoogleMapsCompatible&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&FORMAT=image/jpeg&TileMatrix=14&TileCol=8261&TileRow=6102"
+		return "http://" + MyServer + "/" + MyFolder + "?Layer=" + MyLayer + "&Style=" + MyStyle + "&TileMatrixSet=" + MyTileMatrixSet + "&SERVICE=" + MyService + "&REQUEST=" + MyRequest + "&VERSION=" + MyVersion + "&FORMAT=" + MyFormat + "&TileMatrix=" + Zoom + "&TileCol=" + X + "&TileRow=" + Y;
+	}
+}
+
+void addHeaders(java.net.HttpURLConnection conn) 
+{
+	conn.addRequestProperty("Referer",MyReferer);
+	conn.addRequestProperty("User-Agent",MyUserAgent);	
+}

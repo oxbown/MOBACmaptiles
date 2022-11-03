@@ -1,0 +1,108 @@
+name = "Instituto_Hidrografico Test";
+MyReferer = "https://ideihm.covam.es/visor.html";			// URL du Referer si demandé
+MyUserAgent = "Mozilla/5.0 Gecko/20100101 Firefox/49.0";	// Nécessaire pour certaine carte (IGN par exemple)
+
+tileType = "png";	// Type d’image fourni par le serveur (png, jpg or gif)
+tileSize = 256;		// Facultatif : Supprimer la ligne dans le doute
+minZoom = 2;		// Facultatif : Zoom minimal souhaité (et/ou fourni par le serveur)
+maxZoom = 17;		// Facultatif : Zoom maximal souhaité (et/ou fourni par le serveur) -> Maximum 22 pour Mobac
+
+String getTileUrl(int Zoom, int X, int Y) 
+{
+	if (Zoom < 7) {
+		// gestion Zoom < 7, on prend une carte générique Google pour voir le monde entier
+		return "https://ideihm.covam.es/ihmcache?LAYERS=RasterENC&TRANSPARENT=TRUE&FORMAT=image%2Fpng&VERSION=1.3.0&EXCEPTIONS=INIMAGE&SERVICE=WMS&REQUEST=GetMap&STYLES=&CRS=EPSG%3A3857&BBOX=" + MercatorTileEdges(X,Y ,Zoom) + "&WIDTH=256&HEIGHT=256";
+	}else{
+		return "https://ideihm.covam.es/ihmcache?LAYERS=RasterENC&TRANSPARENT=TRUE&FORMAT=image%2Fpng&VERSION=1.3.0&EXCEPTIONS=INIMAGE&SERVICE=WMS&REQUEST=GetMap&STYLES=&CRS=EPSG%3A3857&BBOX=" + MercatorTileEdges(X,Y ,Zoom) + "&WIDTH=256&HEIGHT=256"; 
+	}
+}
+
+
+void addHeaders(java.net.HttpURLConnection conn) 
+{
+conn.addRequestProperty("Referer",MyReferer);
+conn.addRequestProperty("User-Agent",MyUserAgent); 
+}
+//
+// Fonction projection - https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+// Simplifiée par par Manfred Wollny (wollny.m at freenet.de)
+//                 et Raimund Held (raimundheld at gmx.de)
+// Adaptée pour les Versions 1.1.1 par Nicolas PAOUR (http://randochartreuse.free.fr)
+
+static import java.lang.Math.*;
+
+static double tile2lon(int x, int z) {
+    return x / Math.pow(2.0, z) * 360.0 - 180;
+}
+
+static double tile2lat(int y, int z) {
+    double n = Math.PI - (2.0 * Math.PI * y) / Math.pow(2.0, z);
+    return Math.toDegrees(Math.atan(Math.sinh(n)));
+}
+
+//
+// Fonction projection - https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+// Simplifiée par par Manfred Wollny (wollny.m at freenet.de)
+//                 et Raimund Held (raimundheld at gmx.de)
+// Adaptée pour les Versions 1.1.1 par Nicolas PAOUR (http://randochartreuse.free.fr)
+//
+
+static import java.lang.Math.*;
+
+static double tile2lon(int x, int z) {
+    return x / Math.pow(2.0, z) * 360.0 - 180;
+}
+
+static double tile2lat(int y, int z) {
+    double n = Math.PI - (2.0 * Math.PI * y) / Math.pow(2.0, z);
+    return Math.toDegrees(Math.atan(Math.sinh(n)));
+}
+
+// Fonction projecion de WSG 1984
+// https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
+
+// Unité = degrés (coordonnées géographiques)
+
+if (MyVersion == "1.1.1") {
+	// BBOX=xmin,ymin,xmax,ymax NON-FLIPPED axes en Version 1.1.1
+	String TileEdges(int x, int y, int zoom) {	// "WGS 84" (EPSG:4326)
+		return	tile2lon(x    ,zoom) + "," +	// west (°)
+		      	tile2lat(y + 1,zoom) + "," +	// south (°)
+		      	tile2lon(x + 1,zoom) + "," +	// east (°)
+		      	tile2lat(y    ,zoom) ;		// north (°)
+	}
+} else {
+	// BBOX=ymin,xmin,ymax,xmax FLIPPED axes en Version 1.3.0
+	String TileEdges(int x, int y, int zoom) {	// "WGS 84" (EPSG:4326)
+		return	tile2lat(y + 1,zoom) + "," +	// south (°)
+		      	tile2lon(x    ,zoom) + "," +	// west (°)
+		      	tile2lat(y    ,zoom) + "," +	// north (°)
+		      	tile2lon(x + 1,zoom) ;      	// east (°)
+	}
+}
+
+// Fonction projecion de Mercator
+// https://en.wikipedia.org/wiki/Web_Mercator_projection
+
+// R = 6378137.0 m -> P / 2 = 20037508.34
+double lon2mercator(double l) {
+    return (l * 20037508.34 / 180);
+}
+
+double lat2mercator(double l) {
+    r = toRadians(l);
+    lat = log((1 + Math.sin(r)) / (1 - Math.sin(r)));
+    return (lat * 20037508.34 / 2 / Math.PI);
+}
+
+// Unité = mètre (coordonnées projetées)
+// BBOX=xmin,ymin,xmax,ymax NON-FLIPPED axes
+String MercatorTileEdges(int x, int y , int zoom) {	 	// "WGS 84 / Pseudo-Mercator" (EPSG:3857) - "GOOGLE" (EPSG:900913) - "Popular Visualization CRS / Mercator" (EPSG:3785)
+	return	lon2mercator(tile2lon(x    ,zoom)) + "," +	// west (m)
+	      	lat2mercator(tile2lat(y + 1,zoom)) + "," +	// south (m)
+	      	lon2mercator(tile2lon(x + 1,zoom)) + "," +	// east (m)
+	      	lat2mercator(tile2lat(y    ,zoom)) ;      	// north (m)
+}
+//
+// FIN projection
+//

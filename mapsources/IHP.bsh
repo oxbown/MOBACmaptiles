@@ -1,0 +1,93 @@
+name = "Instituto Hidrografico Marinha Portuguesa";
+MyReferer = "https://geomar.hidrografico.pt/";
+MyUserAgent = "Mozilla/5.0 Gecko/20100101 Firefox/49.0";
+tileType = "png";
+tileSize = 256;
+minZoom = 2;
+maxZoom = 20;
+
+String getTileUrl(int Zoom, int X, int Y) 
+{
+    if (Zoom < 7){
+	    return "https://enc.hidrografico.pt/?CSVALUE=,,,,,3&CSBOOL=2183&service=WMS&request=GetMap&layers=ENC%2CIENC&styles=&format=image%2Fpng&transparent=false&version=1.3.0&width=256&height=256&crs=EPSG%3A3857&bbox=" + MercatorTileEdges(X,Y ,Zoom);
+    }
+    else{
+        return "https://enc.hidrografico.pt/?CSVALUE=,,,,,3&CSBOOL=2183&service=WMS&request=GetMap&layers=ENC,IENC&styles=&format=image/png&transparent=false&version=1.3.0&width=256&height=256&crs=EPSG:3857&bbox=" + MercatorTileEdges(X,Y ,Zoom);
+    }
+}
+void addHeaders(java.net.HttpURLConnection conn) 
+{
+    conn.addRequestProperty("Referer",MyReferer);
+    conn.addRequestProperty("User-Agent",MyUserAgent); 
+}
+
+
+static import java.lang.Math.*;
+static double tile2lon(int x, int z) {
+    return x / Math.pow(2.0, z) * 360.0 - 180;
+    }
+
+static double tile2lat(int y, int z) {
+    double n = Math.PI - (2.0 * Math.PI * y) / Math.pow(2.0, z);
+    return Math.toDegrees(Math.atan(Math.sinh(n)));
+}
+
+static import java.lang.Math.*;
+
+static double tile2lon(int x, int z) {
+    return x / Math.pow(2.0, z) * 360.0 - 180;
+}
+
+static double tile2lat(int y, int z) {
+    double n = Math.PI - (2.0 * Math.PI * y) / Math.pow(2.0, z);
+    return Math.toDegrees(Math.atan(Math.sinh(n)));
+}
+
+// Fonction projecion de WSG 1984
+// https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
+
+// Unité = degrés (coordonnées géographiques)
+
+if (MyVersion == "1.1.1") {
+	// BBOX=xmin,ymin,xmax,ymax NON-FLIPPED axes en Version 1.1.1
+	String TileEdges(int x, int y, int zoom) {	// "WGS 84" (EPSG:4326)
+		return	tile2lon(x    ,zoom) + "," +	// west (°)
+		      	tile2lat(y + 1,zoom) + "," +	// south (°)
+		      	tile2lon(x + 1,zoom) + "," +	// east (°)
+		      	tile2lat(y    ,zoom) ;		// north (°)
+	}
+} else {
+	// BBOX=ymin,xmin,ymax,xmax FLIPPED axes en Version 1.3.0
+	String TileEdges(int x, int y, int zoom) {	// "WGS 84" (EPSG:4326)
+		return	tile2lat(y + 1,zoom) + "," +	// south (°)
+		      	tile2lon(x    ,zoom) + "," +	// west (°)
+		      	tile2lat(y    ,zoom) + "," +	// north (°)
+		      	tile2lon(x + 1,zoom) ;      	// east (°)
+	}
+}
+
+// Fonction projecion de Mercator
+// https://en.wikipedia.org/wiki/Web_Mercator_projection
+
+// R = 6378137.0 m -> P / 2 = 20037508.34
+double lon2mercator(double l) {
+    return (l * 20037508.34 / 180);
+}
+
+double lat2mercator(double l) {
+    r = toRadians(l);
+    lat = log((1 + Math.sin(r)) / (1 - Math.sin(r)));
+    return (lat * 20037508.34 / 2 / Math.PI);
+}
+
+// Unité = mètre (coordonnées projetées)
+// BBOX=xmin,ymin,xmax,ymax NON-FLIPPED axes
+String MercatorTileEdges(int x, int y , int zoom) {	 	// "WGS 84 / Pseudo-Mercator" (EPSG:3857) - "GOOGLE" (EPSG:900913) - "Popular Visualization CRS / Mercator" (EPSG:3785)
+	return	lon2mercator(tile2lon(x    ,zoom)) + "," +	// west (m)
+	      	lat2mercator(tile2lat(y + 1,zoom)) + "," +	// south (m)
+	      	lon2mercator(tile2lon(x + 1,zoom)) + "," +	// east (m)
+	      	lat2mercator(tile2lat(y    ,zoom)) ;      	// north (m)
+}
+//
+// FIN projection
+//

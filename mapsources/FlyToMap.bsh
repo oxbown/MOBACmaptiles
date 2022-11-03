@@ -1,0 +1,23 @@
+// Info: FlytoMap MOBAC source by Oxbown
+// Version : 03/11/2022
+name = "FlyToMap(17)";
+String MyServer = "viewer.flytomap.com"; 
+String MyUserAgent = "Mozilla/5.0 Gecko/20100101 Firefox/49.0";
+String MyReferer = "https://viewer.flytomap.com";
+String MyFolder = "ftm_tiles";
+String TileExt ="png";
+tileType = "png";	
+tileSize = 256;
+minZoom = 2;
+maxZoom = 20;
+
+String getTileUrl(int Zoom, int X, int Y) 
+{
+	return "https://" + MyServer + "/" + MyFolder + "/" + Zoom + "/" + X + "/" + Y + "." + TileExt;
+}
+
+void addHeaders(java.net.HttpURLConnection conn) 
+{
+	conn.addRequestProperty("Referer",MyReferer);
+	conn.addRequestProperty("User-Agent",MyUserAgent);	
+}
